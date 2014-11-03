@@ -35,28 +35,28 @@ import android.util.Log;
  */
 
 /**
- * Keeps track of an entire Scene -- a bitmap (or virtual bitmap) that is much too large
- * to fit into memory. Clients subclass this class and extend its abstract methods to
- * actually return the necessary bitmaps.
+ *
+ * 记录整个场景，这个场景是一个无法直接放进内存的bitmap
+ * 客户继承此类，并且实现相应的抽象方法来返回所需要的bitmap
+ *
  */
 public abstract class Scene {
     private final String TAG = "Scene";
 
     private final static int MINIMUM_PIXELS_IN_VIEW = 50;
 
-    /** The size of the Scene */
+    /** 场景的大小 */
     private Point size = new Point();
-    /** The viewport */
+    /** 可视区 */
     private final Viewport viewport = new Viewport();
-    /** The cache */
+    /** 缓冲区 */
     private final Cache cache = new Cache();
-    
-    //region [gs]etSceneSize
-    /** Set the size of the scene */
+
+    /** 设置场景的大小 */
     public void setSceneSize(int width, int height){
         size.set(width, height);
     }
-    /** Returns a Point representing the size of the scene. Don't modify the returned Point! */
+    /** 返回Point的对象表示场景大小，不要改变Point！ */
     public Point getSceneSize(){
         return size;
     }
