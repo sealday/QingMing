@@ -3,6 +3,7 @@ package me.theegg.qingming;
 import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
@@ -10,7 +11,7 @@ import android.view.WindowManager;
 import java.io.InputStream;
 
 
-public class ImageViewerActivity extends Activity {
+public class ImageViewerActivity extends ActionBarActivity{
     private static final String TAG = "ImageViewerActivity";
     private static final String KEY_X = "X";
     private static final String KEY_Y = "Y";
@@ -22,9 +23,6 @@ public class ImageViewerActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 隐藏窗口标题
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         setContentView(R.layout.activity_main);
         imageSurfaceView = (ImageSurfaceView) findViewById(R.id.worldview);
@@ -49,15 +47,12 @@ public class ImageViewerActivity extends Activity {
             } catch (java.io.IOException e) {
                 Log.e(TAG, e.getMessage());
             }
-            imageSurfaceView.setViewportCenter();
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.i("resume", String.format(" w -> %d, h -> %d", imageSurfaceView.getWidth(), imageSurfaceView.getHeight()));
-        imageSurfaceView.setViewport(new Point(19207, imageSurfaceView.getHeight() / 2));
     }
 
     @Override
