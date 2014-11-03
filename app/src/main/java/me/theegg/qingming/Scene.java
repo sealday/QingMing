@@ -149,59 +149,46 @@ public abstract class Scene {
     }
 
     /**
-     * This method must return a high resolution Bitmap that the Scene
-     * will use to fill out the viewport bitmap upon request. This bitmap
-     * is normally larger than the viewport so that the viewport can be
-     * scrolled without having to refresh the cache. This method runs
-     * on a thread other than the UI thread, and it is not under a lock, so
-     * it is expected that this method can run for a long time (seconds?).
+     * 这个方法必须返回一个高分辨率的Bitmap对象，这个对象是用以填充可视区的位图。
+     * 通常这个对象要比可视区要大，这样可视区可以滚动而不需要刷新缓冲区。这个方法运行
+     * 在非UI线程上面，并且它并没有加锁。因此可以花运行较长的时间。
      *
-     * @param rectOfCache The Rect representing the area of the Scene that
-     *                    the Scene wants cached.
-     * @return the Bitmap representing the requested area of the larger bitmap
+     * @param rectOfCache 想要缓冲的区域
+     * @return 比请求区域大的Bitmap对象
      */
     protected abstract Bitmap fillCache(Rect rectOfCache);
 
     /**
-     * The memory allocation you just did in fillCache caused an OutOfMemoryError.
-     * You can attempt to recover. Experience shows that when we get an
-     * OutOfMemoryError, we're pretty hosed and are going down. For instance, if
-     * we're trying to decode a bitmap region with
-     * {@link android.graphics.BitmapRegionDecoder} and we run out of memory,
-     * we're going to die somewhere in the C code with a SIGSEGV.
+     * 尝试恢复
      *
-     * @param error The OutOfMemoryError exception data
+     * @param error 内存溢出的错误
      */
     protected abstract void fillCacheOutOfMemoryError(OutOfMemoryError error);
 
     /**
-     * Calculate the Rect of the cache's window based on the current viewportRect.
-     * The returned Rect must at least contain the viewportRect, but it can be
-     * larger if the system believes a bitmap of the returned size will fit into
-     * memory. This function must be fast as it happens while the cache lock is held.
+     * 根据当前的可视区区域计算缓冲区的窗口大小，它应该至少包含了可视区的区域，但可以更大一些，
+     * 只要相应的位图可以被载入到内存中。
+     * 这个方法需要尽可能快执行。
      *
-     * @param viewportRect The returned must be able to contain this Rect
-     * @return The Rect that will be used to fill the cache
+     * @param viewportRect 返回的区域至少包含该区域的大小
+     * @return 缓冲区的区域
      */
     protected abstract Rect calculateCacheWindow(Rect viewportRect);
 
     /**
-     * This method fills the passed-in bitmap with sample data. This function must
-     * return as fast as possible so it shouldn't have to do any IO at all -- the
-     * quality of the user experience rests on the speed of this function.
+     * 将样本数据填充到传入的bitmap中。这个函数不应该有IOS操作，应该尽可能快得完成
+     * 它极大影响了用户体验。
      *
-     * @param bitmap       The Bitmap to fill
-     * @param rectOfSample Rectangle within the Scene that this bitmap represents.
+     * @param bitmap       需要填充的位图
+     * @param rectOfSample 场景中的区域
      */
     protected abstract void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample);
 
     /**
-     * The Cache is done drawing the bitmap -- time to add the finishing touches
-     *
-     * @param canvas a canvas on which to draw
+     * 绘制结束
+     * @param canvas 绘制的canvas
      */
     protected abstract void drawComplete(Canvas canvas);
-    //endregion
 
     /**
      * 可视区
@@ -531,30 +518,31 @@ public abstract class Scene {
     }
 
     /**
-     * <p>The CacheThread's job is to wait until the {@link Cache#state} is
-     * {@link CacheState#START_UPDATE} and then update the {@link Cache} given
-     * the current {@link Viewport#window}. It does not want to hold the cache
-     * lock during the call to {@link Scene#fillCache(android.graphics.Rect)} because the call
-     * can take a long time. If we hold the lock, the user experience is very
-     * jumpy.</p>
-     * <p>The CacheThread and the {@link Cache} work hand in hand, both using the
-     * cache itself to synchronize on and using the {@link Cache#state}.
-     * The {@link Cache} is free to update any part of the cache object as long
-     * as it holds the lock. The CacheThread is careful to make sure that it is
-     * the {@link Cache#state} is {@link CacheState#IN_UPDATE} as it updates
-     * the {@link Cache}. It locks and unlocks the cache all along the way, but
-     * makes sure that the cache is not locked when it calls
-     * {@link Scene#fillCache(android.graphics.Rect)}.
+     * <p>CacheThread 主要工作就是等待{@link me.theegg.qingming.Scene.Cache#state}
+     * 转换成 {@link me.theegg.qingming.Scene.CacheState#START_UPDATE}，之后在给定
+     * 当前{@link me.theegg.qingming.Scene.Viewport#window}的情况下，更新
+     * {@link me.theegg.qingming.Scene.Cache}</p>
+     *
+     * <p>它在调用{@link me.theegg.qingming.Scene#fillCache(android.graphics.Rect)}
+     * 期间不会持有缓存锁，因为这个调用时间很长。如果我们持有锁的话，用户体验将糟糕透了。</p>
+     *
+     *
+     * {@link me.theegg.qingming.Scene.Cache}只要持有锁，就可以更新Cache对象的任何一
+     * 个部分，CacheThread已经确保了当它在更新{@link me.theegg.qingming.Scene.Cache}
+     * 时，{@link me.theegg.qingming.Scene.Cache#state}是处在{@link CacheState#IN_UPDATE}
+     * 状态。它操作的时候就锁住cache，不操作的时候就释放锁。但是也确保了一件事情，那就是当
+     * {@link Scene#fillCache(android.graphics.Rect)}被调用的时候cache不会被锁住。
+     *
      */
-    class CacheThread extends Thread {
-        final Cache cache;
-        boolean running = false;
+    private class CacheThread extends Thread {
+        private final Cache cache;
+        private boolean running = false;
 
-        void setRunning(boolean value) {
+        private void setRunning(boolean value) {
             running = value;
         }
 
-        CacheThread(Cache cache) {
+        public CacheThread(Cache cache) {
             this.cache = cache;
         }
 
@@ -565,8 +553,8 @@ public abstract class Scene {
             while (running) {
                 while (running && cache.getState() != CacheState.START_UPDATE)
                     try {
-                        // Sleep until we have something to do
-                        Thread.sleep(Integer.MAX_VALUE);
+                        // 等待
+                        Thread.sleep(Long.MAX_VALUE);
                     } catch (InterruptedException ignored) {
                     }
                 if (!running)
@@ -586,7 +574,6 @@ public abstract class Scene {
                     }
                     synchronized (cache) {
                         if (cache.getState() == CacheState.IN_UPDATE)
-                            //cache.setWindowRect(viewportRect);
                             cache.window.set(calculateCacheWindow(viewportRect));
                         else
                             cont = false;
@@ -605,14 +592,10 @@ public abstract class Scene {
                                 }
                             }
                             long done = System.currentTimeMillis();
-                            if (Debug.isDebuggerConnected())
-                                Log.d(TAG, String.format("fillCache in %dms", done - start));
+                            Log.d(TAG, String.format("fillCache in %dms", done - start));
                         } catch (OutOfMemoryError e) {
                             Log.d(TAG, "CacheThread out of memory");
-                            /*
-                             *  Attempt to recover. Experience shows that if we
-                             *  do get an OutOfMemoryError, we're pretty hosed and are going down.
-                             */
+                            // 尝试处理内存溢出
                             synchronized (cache) {
                                 fillCacheOutOfMemoryError(e);
                                 if (cache.getState() == CacheState.IN_UPDATE) {
@@ -625,5 +608,4 @@ public abstract class Scene {
             }
         }
     }
-    //endregion
 }

@@ -14,26 +14,26 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class InputStreamScene extends Scene {
+
     private static final String TAG = "InputStreamScene";
     private static final boolean DEBUG = false;
     private static final BitmapFactory.Options options = new BitmapFactory.Options();
 
     /**
-     * What is the downsample size for the sample image?  1=1/2, 2=1/4 3=1/8, etc
+     * 降低采样率的值
      */
     private static final int DOWN_SAMPLE_SHIFT = 2;
 
     /**
-     * How many bytes does one pixel use?
+     * 每个像素占多少字节
      */
     private final int BYTES_PER_PIXEL = 4;
 
     /**
-     * What percent of total memory should we use for the cache? The bigger the cache,
-     * the longer it takes to read -- 1.2 secs for 25%, 600ms for 10%, 500ms for 5%.
-     * User experience seems to be best for smaller values.
+     * 我们该用总内存的多少作为缓存？缓存越大，读取的时间越久。25%需要1.2秒，10%需要600毫秒，5%
+     * 需要500毫秒。用户体验在越少的缓存情况下似乎越好。
      */
-    private int percent = 5; // Above 25 and we get OOMs
+    private int percent = 5; // 超过25将会发生内存溢出
 
     private BitmapRegionDecoder decoder;
     private Bitmap sampleBitmap;
@@ -47,16 +47,17 @@ public class InputStreamScene extends Scene {
 
         this.decoder = BitmapRegionDecoder.newInstance(inputStream, false);
 
-        // Grab the bounds for the scene dimensions
+        // 只计算大小
         tmpOptions.inJustDecodeBounds = true;
         BitmapFactory.decodeStream(inputStream, null, tmpOptions);
         setSceneSize(tmpOptions.outWidth, tmpOptions.outHeight);
 
-        // Create the sample image
+        // 创建图像样本
         tmpOptions.inJustDecodeBounds = false;
         tmpOptions.inSampleSize = (1 << DOWN_SAMPLE_SHIFT);
         sampleBitmap = BitmapFactory.decodeStream(inputStream, null, tmpOptions);
 
+        // 表示初始化完毕
         initialize();
     }
 
@@ -68,12 +69,6 @@ public class InputStreamScene extends Scene {
         return bitmap;
     }
 
-    private static Paint red = new Paint();
-
-    static {
-        red.setColor(Color.RED);
-        red.setStrokeWidth(5L);
-    }
 
     @Override
     protected void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample) {
@@ -104,7 +99,7 @@ public class InputStreamScene extends Scene {
         int vw = viewportRect.width();
         int vh = viewportRect.height();
 
-        // Calculate the max size of the margins to fit in our memory budget
+        // 计算最大值
         int tw = 0;
         int th = 0;
         int mw = tw;
@@ -114,42 +109,36 @@ public class InputStreamScene extends Scene {
             mh = th++;
         }
 
-        // Trim the margins if they're too big.
-        if (vw + mw > size.x) // viewport width + margin width > width of the image
+        // 不需要超过总的大小
+        if (vw + mw > size.x) // 可视区宽度 + 外围宽度 > 图片的宽度
             mw = Math.max(0, size.x - vw);
-        if (vh + mh > size.y) // viewport height + margin height > height of the image
+        if (vh + mh > size.y) // 可视区高度 + 外围高度 > 图片的高度
             mh = Math.max(0, size.y - vh);
 
-        // Figure out the left & right based on the margin. We assume our viewportRect
-        // is <= our size. If that's not the case, then this logic breaks.
         int left = viewportRect.left - (mw >> 1);
         int right = viewportRect.right + (mw >> 1);
         if (left < 0) {
-            right = right - left; // Add's the overage on the left side back to the right
+            right = right - left;
             left = 0;
         }
         if (right > size.x) {
-            left = left - (right - size.x); // Adds overage on right side back to left
+            left = left - (right - size.x);
             right = size.x;
         }
 
-        // Figure out the top & bottom based on the margin. We assume our viewportRect
-        // is <= our size. If that's not the case, then this logic breaks.
         int top = viewportRect.top - (mh >> 1);
         int bottom = viewportRect.bottom + (mh >> 1);
         if (top < 0) {
-            bottom = bottom - top; // Add's the overage on the top back to the bottom
+            bottom = bottom - top;
             top = 0;
         }
         if (bottom > size.y) {
-            top = top - (bottom - size.y); // Adds overage on bottom back to top
+            top = top - (bottom - size.y);
             bottom = size.y;
         }
 
-        // Set the origin based on our new calculated values.
         calculatedCacheWindowRect.set(left, top, right, bottom);
-        if (DEBUG)
-            Log.d(TAG, "new cache.originRect = " + calculatedCacheWindowRect.toShortString() + " size=" + size.toString());
+        Log.d(TAG, "new cache.originRect = " + calculatedCacheWindowRect.toShortString() + " size=" + size.toString());
         return calculatedCacheWindowRect;
     }
 
