@@ -308,6 +308,8 @@ public abstract class Scene {
 
         /**
          * 调整放大倍率
+         * @param factor 倍率
+         * @param screenFocus 焦点
          */
         public void zoom(float factor, PointF screenFocus) {
             if (factor != 1.0) {
@@ -366,6 +368,7 @@ public abstract class Scene {
             }
         }
 
+        /** 可视区绘制 */
         void draw(Canvas c) {
             cache.update(this);
             synchronized (this) {
@@ -376,42 +379,39 @@ public abstract class Scene {
             }
         }
     }
-    //endregion
-
-    //region class Cache
 
     private enum CacheState {UNINITIALIZED, INITIALIZED, START_UPDATE, IN_UPDATE, READY, SUSPEND}
 
     /**
-     * Keep track of the cached bitmap
+     * 记录缓冲的bitmap
      */
     private class Cache {
-        /**
-         * A Rect that defines where the Cache is within the scene
-         */
+
+        /** 用一个矩形（Rect）来标识缓冲区的位置、大小 */
         final Rect window = new Rect(0, 0, 0, 0);
-        /**
-         * The bitmap of the current cache
-         */
+
+        /** 当前缓冲区的bitmap */
         Bitmap bitmapRef = null;
+
+        /** 当前缓冲区的状态 */
         CacheState state = CacheState.UNINITIALIZED;
 
-        void setState(CacheState newState) {
-            if (Debug.isDebuggerConnected())
-                Log.i(TAG, String.format("cacheState old=%s new=%s", state.toString(), newState.toString()));
+        /** 设置缓冲区状态 */
+        private void setState(CacheState newState) {
+            Log.i(TAG, String.format("cacheState old=%s new=%s", state.toString(), newState.toString()));
             state = newState;
         }
 
-        CacheState getState() {
+        /** 获取缓冲区状态 */
+        private CacheState getState() {
             return state;
         }
 
-        /**
-         * Our load from disk thread
-         */
-        CacheThread cacheThread;
+        /** 缓冲区载入线程 */
+        private CacheThread cacheThread;
 
-        void start() {
+        /** 开始载入 */
+        private void start() {
             if (cacheThread != null) {
                 cacheThread.setRunning(false);
                 cacheThread.interrupt();
@@ -422,7 +422,8 @@ public abstract class Scene {
             cacheThread.start();
         }
 
-        void stop() {
+        /** 停止载入 */
+        private void stop() {
             cacheThread.running = false;
             cacheThread.interrupt();
 
@@ -432,58 +433,53 @@ public abstract class Scene {
                     cacheThread.join();
                     retry = false;
                 } catch (InterruptedException e) {
-                    // we will try it again and again...
+                    // 不断尝试停止
                 }
             }
             cacheThread = null;
         }
 
-        void invalidate() {
+        /** 使缓冲区无效 */
+        private void invalidate() {
             synchronized (this) {
                 setState(CacheState.INITIALIZED);
                 cacheThread.interrupt();
             }
         }
 
-        /**
-         * Fill the bitmap with the part of the scene referenced by the viewport Rect
-         */
-        void update(Viewport viewport) {
-            Bitmap bitmap = null;    // If this is null at the bottom, then load from the sample
+        /** 填充可视区 */
+        private void update(Viewport viewport) {
+            Bitmap bitmap = null;
             synchronized (this) {
                 switch (getState()) {
                     case UNINITIALIZED:
-                        // nothing can be done -- should never get here
+                        // 永远不能执行到这里
                         return;
                     case INITIALIZED:
-                        // time to cache some data
+                        // 开始缓冲数据
                         setState(CacheState.START_UPDATE);
                         cacheThread.interrupt();
                         break;
                     case START_UPDATE:
-                        // I already told the thread to start
+                        // 已经开始缓冲数据
                         break;
                     case IN_UPDATE:
-                        // Already reading some data, just use the sample
+                        // 正在缓冲数据
                         break;
                     case SUSPEND:
-                        // Loading from cache suspended.
+                        // 暂停缓冲数据
                         break;
                     case READY:
-                        // I have some data to show
+                        // 已经准备好了数据
                         if (bitmapRef == null) {
-                            // Start the cache off right
-                            if (Debug.isDebuggerConnected())
-                                Log.d(TAG, "bitmapRef is null");
+                            Log.d(TAG, "bitmapRef is null");
                             setState(CacheState.START_UPDATE);
                             cacheThread.interrupt();
                         } else if (!window.contains(viewport.window)) {
-                            if (Debug.isDebuggerConnected())
-                                Log.d(TAG, "viewport not in cache");
+                            Log.d(TAG, "viewport not in cache");
                             setState(CacheState.START_UPDATE);
                             cacheThread.interrupt();
                         } else {
-                            // Happy case -- the cache already contains the Viewport
                             bitmap = bitmapRef;
                         }
                         break;
@@ -495,7 +491,8 @@ public abstract class Scene {
                 loadBitmapIntoViewport(bitmap);
         }
 
-        void loadBitmapIntoViewport(Bitmap bitmap) {
+        /** 从缓冲区中载入位图到可视区 */
+        private void loadBitmapIntoViewport(Bitmap bitmap) {
             if (bitmap != null) {
                 synchronized (viewport) {
                     int left = viewport.window.left - window.left;
@@ -516,11 +513,12 @@ public abstract class Scene {
             }
         }
 
-        final Rect srcRect = new Rect(0, 0, 0, 0);
-        final Rect dstRect = new Rect(0, 0, 0, 0);
-        final Point dstSize = new Point();
+        private final Rect srcRect = new Rect(0, 0, 0, 0);
+        private final Rect dstRect = new Rect(0, 0, 0, 0);
+        private final Point dstSize = new Point();
 
-        void loadSampleIntoViewport() {
+        /** 直接从源文件中读取可视区数据 */
+        private void loadSampleIntoViewport() {
             if (getState() != CacheState.UNINITIALIZED) {
                 synchronized (viewport) {
                     drawSampleRectIntoBitmap(
@@ -531,9 +529,6 @@ public abstract class Scene {
             }
         }
     }
-    //endregion
-
-    //region class CacheThread
 
     /**
      * <p>The CacheThread's job is to wait until the {@link Cache#state} is
