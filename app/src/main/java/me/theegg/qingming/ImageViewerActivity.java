@@ -57,7 +57,7 @@ public class ImageViewerActivity extends Activity {
     protected void onResume() {
         super.onResume();
         Log.i("resume", String.format(" w -> %d, h -> %d", imageSurfaceView.getWidth(), imageSurfaceView.getHeight()));
-        imageSurfaceView.setViewport(new Point(19207, imageSurfaceView.getHeight()/2));
+        imageSurfaceView.setViewport(new Point(19207, imageSurfaceView.getHeight() / 2));
     }
 
     @Override

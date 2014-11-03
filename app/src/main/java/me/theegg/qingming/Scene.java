@@ -35,177 +35,224 @@ import android.util.Log;
  */
 
 /**
- *
  * 记录整个场景，这个场景是一个无法直接放进内存的bitmap
  * 客户继承此类，并且实现相应的抽象方法来返回所需要的bitmap
- *
  */
 public abstract class Scene {
     private final String TAG = "Scene";
 
     private final static int MINIMUM_PIXELS_IN_VIEW = 50;
 
-    /** 场景的大小 */
+    /**
+     * 场景的大小
+     */
     private Point size = new Point();
-    /** 可视区 */
+    /**
+     * 可视区
+     */
     private final Viewport viewport = new Viewport();
-    /** 缓冲区 */
+    /**
+     * 缓冲区
+     */
     private final Cache cache = new Cache();
 
-    /** 设置场景的大小 */
-    public void setSceneSize(int width, int height){
+    /**
+     * 设置场景的大小
+     */
+    public void setSceneSize(int width, int height) {
         size.set(width, height);
     }
-    /** 返回Point的对象表示场景大小，不要改变Point！ */
-    public Point getSceneSize(){
+
+    /**
+     * 返回Point的对象表示场景大小，不要改变Point！
+     */
+    public Point getSceneSize() {
         return size;
     }
-    /** Set the passed-in point to the size of the scene */
-    public void getSceneSize(Point point){
+
+    /**
+     * 使传进来的Point指针得到场景大小
+     */
+    public void getSceneSize(Point point) {
         point.set(size.x, size.y);
     }
-    //endregion
 
-    //region getViewport()
-    public Viewport getViewport(){return viewport;}
-    //endregion
+    /**
+     * 获取可视区
+     */
+    public Viewport getViewport() {
+        return viewport;
+    }
 
-    //region initialize/start/stop/suspend/invalidate the cache
-    /** Initializes the cache */
-    public void initialize(){
-        if (cache.getState()== CacheState.UNINITIALIZED){
-            synchronized(cache){
+    /**
+     * 初始化缓冲区
+     */
+    public void initialize() {
+        if (cache.getState() == CacheState.UNINITIALIZED) {
+            synchronized (cache) {
                 cache.setState(CacheState.INITIALIZED);
             }
         }
     }
-    /** Starts the cache thread */
-    public void start(){
+
+    /**
+     * 开启缓冲区线程
+     */
+    public void start() {
         cache.start();
     }
-    /** Stops the cache thread */
-    public void stop(){
+
+    /**
+     * 停止缓冲区线程
+     */
+    public void stop() {
         cache.stop();
     }
-    /** 
-     * Suspends or unsuspends the cache thread. This can be
-     * used to temporarily stop the cache from updating
-     * during a fling event.
-     * @param suspend True to suspend the cache. False to unsuspend.
+
+    /**
+     * 暂停或继续缓冲区线程
+     * 可以用在惯性移动时临时停止更新缓冲区
+     *
+     * @param suspend 真为暂停，假为继续。
      */
-    public void setSuspend(boolean suspend){
+    public void setSuspend(boolean suspend) {
         if (suspend) {
-            synchronized(cache){
+            synchronized (cache) {
                 cache.setState(CacheState.SUSPEND);
             }
         } else {
-            if (cache.getState()== CacheState.SUSPEND) {
-                synchronized(cache){
+            if (cache.getState() == CacheState.SUSPEND) {
+                synchronized (cache) {
                     cache.setState(CacheState.INITIALIZED);
                 }
             }
         }
     }
-    /** Invalidate the cache. This causes it to refill */
+
+    /**
+     * 使缓冲区内容无效，这将导致缓冲区重新填充
+     */
     @SuppressWarnings("unused")
-    public void invalidate(){
+    public void invalidate() {
         cache.invalidate();
     }
-    //endregion
 
-    //region void draw(Canvas c)
     /**
-     * Draw the scene to the canvas. This operation fills the canvas with
-     * the bitmap referenced by the viewport's location within the Scene.
-     * If the cache already has the data (and is not suspended), then the
-     * high resolution bitmap from the cache is used. If it's not available,
-     * then the lower resolution bitmap from the sample is used.
+     * 将场景(scene)内容画到画布上(canvas)。
+     * 这个操作将场景中可视区的bitmap填充到画布上。
+     * 如果缓冲区已经有数据了，而且不是暂停状态，那么
+     * 将使用缓冲区中高分辨率的bitmap。
+     * 如果不可用，则从样本中取低分辨率的bitmap。
      */
-    public void draw(Canvas c){
+    public void draw(Canvas c) {
         viewport.draw(c);
     }
-    //endregion
 
-    //region protected abstract
     /**
-     * This method must return a high resolution Bitmap that the Scene 
+     * This method must return a high resolution Bitmap that the Scene
      * will use to fill out the viewport bitmap upon request. This bitmap
      * is normally larger than the viewport so that the viewport can be
      * scrolled without having to refresh the cache. This method runs
      * on a thread other than the UI thread, and it is not under a lock, so
-     * it is expected that this method can run for a long time (seconds?). 
+     * it is expected that this method can run for a long time (seconds?).
+     *
      * @param rectOfCache The Rect representing the area of the Scene that
-     * the Scene wants cached.
+     *                    the Scene wants cached.
      * @return the Bitmap representing the requested area of the larger bitmap
      */
     protected abstract Bitmap fillCache(Rect rectOfCache);
+
     /**
      * The memory allocation you just did in fillCache caused an OutOfMemoryError.
-     * You can attempt to recover. Experience shows that when we get an 
+     * You can attempt to recover. Experience shows that when we get an
      * OutOfMemoryError, we're pretty hosed and are going down. For instance, if
      * we're trying to decode a bitmap region with
-     * {@link android.graphics.BitmapRegionDecoder} and we run out of memory, 
-     * we're going to die somewhere in the C code with a SIGSEGV. 
+     * {@link android.graphics.BitmapRegionDecoder} and we run out of memory,
+     * we're going to die somewhere in the C code with a SIGSEGV.
+     *
      * @param error The OutOfMemoryError exception data
      */
-    protected abstract void fillCacheOutOfMemoryError( OutOfMemoryError error );
+    protected abstract void fillCacheOutOfMemoryError(OutOfMemoryError error);
+
     /**
      * Calculate the Rect of the cache's window based on the current viewportRect.
      * The returned Rect must at least contain the viewportRect, but it can be
      * larger if the system believes a bitmap of the returned size will fit into
      * memory. This function must be fast as it happens while the cache lock is held.
+     *
      * @param viewportRect The returned must be able to contain this Rect
      * @return The Rect that will be used to fill the cache
      */
     protected abstract Rect calculateCacheWindow(Rect viewportRect);
+
     /**
      * This method fills the passed-in bitmap with sample data. This function must
      * return as fast as possible so it shouldn't have to do any IO at all -- the
      * quality of the user experience rests on the speed of this function.
-     * @param bitmap The Bitmap to fill
+     *
+     * @param bitmap       The Bitmap to fill
      * @param rectOfSample Rectangle within the Scene that this bitmap represents.
      */
     protected abstract void drawSampleRectIntoBitmap(Bitmap bitmap, Rect rectOfSample);
+
     /**
      * The Cache is done drawing the bitmap -- time to add the finishing touches
+     *
      * @param canvas a canvas on which to draw
      */
     protected abstract void drawComplete(Canvas canvas);
     //endregion
 
-    //region class Viewport
-
+    /**
+     * 可视区
+     */
     public class Viewport {
-        /** The bitmap of the current viewport */
+        /**
+         * 当前可视区对应的bitmap
+         */
         Bitmap bitmap = null;
-        /** A Rect that defines where the Viewport is within the scene */
-        final Rect window = new Rect(0,0,0,0);
+        /**
+         * 定义可视区在场景中位置的矩形(Rect)对象
+         */
+        final Rect window = new Rect(0, 0, 0, 0);
+        /**
+         * 放大倍率
+         */
         float zoom = 1.0f;
 
-        public void setOrigin(int x, int y){
-            synchronized(this){
+        /**
+         * 设置原点
+         */
+        public void setOrigin(int x, int y) {
+            synchronized (this) {
                 int w = window.width();
                 int h = window.height();
-    
-                // check bounds
-                if (x < 0)
-                    x = 0;
-    
-                if (y < 0)
-                    y = 0;
-    
-                if (x + w > size.x)
-                    x = size.x - w;
-    
-                if (y + h > size.y)
-                    y = size.y - h;
-    
-                window.set(x, y, x+w, y+h);
+
+                // 检查边界
+                if (x < 0) x = 0;
+                if (y < 0) y = 0;
+                if (x + w > size.x) x = size.x - w;
+                if (y + h > size.y) y = size.y - h;
+
+                window.set(x, y, x + w, y + h);
             }
         }
-        public void setSize( int w, int h ){
+
+        /**
+         * 获取原点
+         */
+        public void getOrigin(Point p) {
             synchronized (this) {
-                if (bitmap !=null){
+                p.set(window.left, window.top);
+            }
+        }
+
+        /**
+         * 设置可视区大小
+         */
+        public void setSize(int w, int h) {
+            synchronized (this) {
+                if (bitmap != null) {
                     bitmap.recycle();
                     bitmap = null;
                 }
@@ -217,92 +264,112 @@ public abstract class Scene {
                         window.top + h);
             }
         }
-        public void getOrigin(Point p){
-            synchronized (this) {
-                p.set(window.left, window.top);
-            }
-        }
-        public void getSize(Point p){
+
+        /**
+         * 获取可视区大小
+         */
+        public void getSize(Point p) {
             synchronized (this) {
                 p.x = window.width();
                 p.y = window.height();
             }
         }
-        public void getPhysicalSize(Point p){
-            synchronized (this){
+
+        /**
+         * 获取与可视区相关联的bitmap的大小
+         */
+        public void getPhysicalSize(Point p) {
+            synchronized (this) {
                 p.x = getPhysicalWidth();
                 p.y = getPhysicalHeight();
             }
         }
-        public int getPhysicalWidth(){
+
+        /**
+         * 获取与可视区相关联的bitmap的宽度
+         */
+        public int getPhysicalWidth() {
             return bitmap.getWidth();
         }
-        public int getPhysicalHeight(){
+
+        /**
+         * 获取与可视区相关联的bitmap的高度
+         */
+        public int getPhysicalHeight() {
             return bitmap.getHeight();
         }
-        public float getZoom(){
+
+        /**
+         * 获取放大倍率
+         */
+        public float getZoom() {
             return zoom;
         }
-        public void zoom(float factor, PointF screenFocus){
-            if (factor!=1.0){
 
-                PointF screenSize = new PointF(bitmap.getWidth(),bitmap.getHeight());
+        /**
+         * 调整放大倍率
+         */
+        public void zoom(float factor, PointF screenFocus) {
+            if (factor != 1.0) {
+
+                PointF screenSize = new PointF(bitmap.getWidth(), bitmap.getHeight());
                 PointF sceneSize = new PointF(getSceneSize());
                 float screenWidthToHeight = screenSize.x / screenSize.y;
                 float screenHeightToWidth = screenSize.y / screenSize.x;
-                synchronized (this){
+                synchronized (this) {
                     float newZoom = zoom * factor;
                     RectF w1 = new RectF(window);
                     RectF w2 = new RectF();
                     PointF sceneFocus = new PointF(
-                            w1.left + (screenFocus.x/screenSize.x)*w1.width(),
-                            w1.top + (screenFocus.y/screenSize.y)*w1.height()
+                            w1.left + (screenFocus.x / screenSize.x) * w1.width(),
+                            w1.top + (screenFocus.y / screenSize.y) * w1.height()
                     );
                     float w2Width = getPhysicalWidth() * newZoom;
-                    if (w2Width > sceneSize.x){
+                    if (w2Width > sceneSize.x) {
                         w2Width = sceneSize.x;
                         newZoom = w2Width / getPhysicalWidth();
                     }
-                    if (w2Width < MINIMUM_PIXELS_IN_VIEW){
+                    if (w2Width < MINIMUM_PIXELS_IN_VIEW) {
                         w2Width = MINIMUM_PIXELS_IN_VIEW;
                         newZoom = w2Width / getPhysicalWidth();
                     }
                     float w2Height = w2Width * screenHeightToWidth;
-                    if (w2Height > sceneSize.y){
+                    if (w2Height > sceneSize.y) {
                         w2Height = sceneSize.y;
                         w2Width = w2Height * screenWidthToHeight;
                         newZoom = w2Width / getPhysicalWidth();
                     }
-                    if (w2Height < MINIMUM_PIXELS_IN_VIEW){
+                    if (w2Height < MINIMUM_PIXELS_IN_VIEW) {
                         w2Height = MINIMUM_PIXELS_IN_VIEW;
                         w2Width = w2Height * screenWidthToHeight;
                         newZoom = w2Width / getPhysicalWidth();
                     }
-                    w2.left = sceneFocus.x - ((screenFocus.x/screenSize.x) * w2Width);
-                    w2.top = sceneFocus.y - ((screenFocus.y/screenSize.y) * w2Height);
-                    if (w2.left<0)
-                        w2.left=0;
-                    if (w2.top<0)
-                        w2.top=0;
-                    w2.right = w2.left+w2Width;
-                    w2.bottom= w2.top+w2Height;
-                    if (w2.right>sceneSize.x){
-                        w2.right=sceneSize.x;
-                        w2.left=w2.right-w2Width;
+                    w2.left = sceneFocus.x - ((screenFocus.x / screenSize.x) * w2Width);
+                    w2.top = sceneFocus.y - ((screenFocus.y / screenSize.y) * w2Height);
+                    if (w2.left < 0)
+                        w2.left = 0;
+                    if (w2.top < 0)
+                        w2.top = 0;
+                    w2.right = w2.left + w2Width;
+                    w2.bottom = w2.top + w2Height;
+                    if (w2.right > sceneSize.x) {
+                        w2.right = sceneSize.x;
+                        w2.left = w2.right - w2Width;
                     }
-                    if (w2.bottom>sceneSize.y){
-                        w2.bottom=sceneSize.y;
-                        w2.top=w2.bottom-w2Height;
+                    if (w2.bottom > sceneSize.y) {
+                        w2.bottom = sceneSize.y;
+                        w2.top = w2.bottom - w2Height;
                     }
-                    window.set((int)w2.left,(int)w2.top,(int)w2.right,(int)w2.bottom);
+                    window.set((int) w2.left, (int) w2.top, (int) w2.right, (int) w2.bottom);
                     zoom = newZoom;
                 }
             }
         }
-        void draw(Canvas c){
+
+        void draw(Canvas c) {
             cache.update(this);
-            synchronized (this){
-                if (c!=null && bitmap !=null){
+            synchronized (this) {
+                if (c != null && bitmap != null) {
                     c.drawBitmap(bitmap, 0F, 0F, null);
                     drawComplete(c);
                 }
@@ -313,29 +380,39 @@ public abstract class Scene {
 
     //region class Cache
 
-    private enum CacheState {UNINITIALIZED,INITIALIZED,START_UPDATE,IN_UPDATE,READY,SUSPEND}
+    private enum CacheState {UNINITIALIZED, INITIALIZED, START_UPDATE, IN_UPDATE, READY, SUSPEND}
+
     /**
      * Keep track of the cached bitmap
      */
     private class Cache {
-        /** A Rect that defines where the Cache is within the scene */
-        final Rect window = new Rect(0,0,0,0);
-        /** The bitmap of the current cache */
+        /**
+         * A Rect that defines where the Cache is within the scene
+         */
+        final Rect window = new Rect(0, 0, 0, 0);
+        /**
+         * The bitmap of the current cache
+         */
         Bitmap bitmapRef = null;
         CacheState state = CacheState.UNINITIALIZED;
 
-        void setState(CacheState newState){
+        void setState(CacheState newState) {
             if (Debug.isDebuggerConnected())
                 Log.i(TAG, String.format("cacheState old=%s new=%s", state.toString(), newState.toString()));
             state = newState;
         }
-        CacheState getState(){ return state; }
-        
-        /** Our load from disk thread */
+
+        CacheState getState() {
+            return state;
+        }
+
+        /**
+         * Our load from disk thread
+         */
         CacheThread cacheThread;
-        
-        void start(){
-            if (cacheThread!=null){
+
+        void start() {
+            if (cacheThread != null) {
                 cacheThread.setRunning(false);
                 cacheThread.interrupt();
                 cacheThread = null;
@@ -344,8 +421,8 @@ public abstract class Scene {
             cacheThread.setName("cacheThread");
             cacheThread.start();
         }
-        
-        void stop(){
+
+        void stop() {
             cacheThread.running = false;
             cacheThread.interrupt();
 
@@ -360,70 +437,73 @@ public abstract class Scene {
             }
             cacheThread = null;
         }
-        void invalidate(){
-            synchronized(this){
+
+        void invalidate() {
+            synchronized (this) {
                 setState(CacheState.INITIALIZED);
                 cacheThread.interrupt();
             }
         }
-        
-        /** Fill the bitmap with the part of the scene referenced by the viewport Rect */
-        void update(Viewport viewport){
+
+        /**
+         * Fill the bitmap with the part of the scene referenced by the viewport Rect
+         */
+        void update(Viewport viewport) {
             Bitmap bitmap = null;    // If this is null at the bottom, then load from the sample
-            synchronized(this){
-                switch(getState()){
-                case UNINITIALIZED:
-                    // nothing can be done -- should never get here
-                    return;
-                case INITIALIZED:
-                    // time to cache some data
-                    setState(CacheState.START_UPDATE);
-                    cacheThread.interrupt();
-                    break;
-                case START_UPDATE:
-                    // I already told the thread to start
-                    break;
-                case IN_UPDATE:
-                    // Already reading some data, just use the sample 
-                    break;
-                case SUSPEND:
-                    // Loading from cache suspended.
-                    break;
-                case READY:
-                    // I have some data to show
-                    if (bitmapRef==null){
-                        // Start the cache off right
-                        if (Debug.isDebuggerConnected())
-                            Log.d(TAG, "bitmapRef is null");
+            synchronized (this) {
+                switch (getState()) {
+                    case UNINITIALIZED:
+                        // nothing can be done -- should never get here
+                        return;
+                    case INITIALIZED:
+                        // time to cache some data
                         setState(CacheState.START_UPDATE);
                         cacheThread.interrupt();
-                    } else if (!window.contains(viewport.window)){
-                        if (Debug.isDebuggerConnected())
-                            Log.d(TAG, "viewport not in cache");
-                        setState(CacheState.START_UPDATE);
-                        cacheThread.interrupt();
-                    } else {
-                        // Happy case -- the cache already contains the Viewport
-                        bitmap = bitmapRef;
-                    }
-                    break;
+                        break;
+                    case START_UPDATE:
+                        // I already told the thread to start
+                        break;
+                    case IN_UPDATE:
+                        // Already reading some data, just use the sample
+                        break;
+                    case SUSPEND:
+                        // Loading from cache suspended.
+                        break;
+                    case READY:
+                        // I have some data to show
+                        if (bitmapRef == null) {
+                            // Start the cache off right
+                            if (Debug.isDebuggerConnected())
+                                Log.d(TAG, "bitmapRef is null");
+                            setState(CacheState.START_UPDATE);
+                            cacheThread.interrupt();
+                        } else if (!window.contains(viewport.window)) {
+                            if (Debug.isDebuggerConnected())
+                                Log.d(TAG, "viewport not in cache");
+                            setState(CacheState.START_UPDATE);
+                            cacheThread.interrupt();
+                        } else {
+                            // Happy case -- the cache already contains the Viewport
+                            bitmap = bitmapRef;
+                        }
+                        break;
                 }
             }
-            if (bitmap==null)
+            if (bitmap == null)
                 loadSampleIntoViewport();
             else
                 loadBitmapIntoViewport(bitmap);
         }
-        
-        void loadBitmapIntoViewport(Bitmap bitmap){
-            if (bitmap!=null){
-                synchronized(viewport){
-                    int left   = viewport.window.left - window.left;
-                    int top    = viewport.window.top  - window.top;
-                    int right  = left + viewport.window.width();
-                    int bottom = top  + viewport.window.height();
+
+        void loadBitmapIntoViewport(Bitmap bitmap) {
+            if (bitmap != null) {
+                synchronized (viewport) {
+                    int left = viewport.window.left - window.left;
+                    int top = viewport.window.top - window.top;
+                    int right = left + viewport.window.width();
+                    int bottom = top + viewport.window.height();
                     viewport.getPhysicalSize(dstSize);
-                    srcRect.set( left, top, right, bottom );
+                    srcRect.set(left, top, right, bottom);
                     dstRect.set(0, 0, dstSize.x, dstSize.y);
                     Canvas c = new Canvas(viewport.bitmap);
                     c.drawColor(Color.BLACK);
@@ -435,17 +515,18 @@ public abstract class Scene {
                 }
             }
         }
-        final Rect srcRect = new Rect(0,0,0,0);
-        final Rect dstRect = new Rect(0,0,0,0);
+
+        final Rect srcRect = new Rect(0, 0, 0, 0);
+        final Rect dstRect = new Rect(0, 0, 0, 0);
         final Point dstSize = new Point();
-        
-        void loadSampleIntoViewport(){
-            if (getState()!= CacheState.UNINITIALIZED){
-                synchronized(viewport){
+
+        void loadSampleIntoViewport() {
+            if (getState() != CacheState.UNINITIALIZED) {
+                synchronized (viewport) {
                     drawSampleRectIntoBitmap(
-                        viewport.bitmap,
-                        viewport.window
-                        );
+                            viewport.bitmap,
+                            viewport.window
+                    );
                 }
             }
         }
@@ -453,6 +534,7 @@ public abstract class Scene {
     //endregion
 
     //region class CacheThread
+
     /**
      * <p>The CacheThread's job is to wait until the {@link Cache#state} is
      * {@link CacheState#START_UPDATE} and then update the {@link Cache} given
@@ -472,48 +554,54 @@ public abstract class Scene {
     class CacheThread extends Thread {
         final Cache cache;
         boolean running = false;
-        void setRunning(boolean value){ running = value; }
-        
-        CacheThread(Cache cache){ this.cache = cache; }
-        
+
+        void setRunning(boolean value) {
+            running = value;
+        }
+
+        CacheThread(Cache cache) {
+            this.cache = cache;
+        }
+
         @Override
         public void run() {
-            running=true;
-            Rect viewportRect = new Rect(0,0,0,0);
-            while(running){
-                while(running && cache.getState()!= CacheState.START_UPDATE)
+            running = true;
+            Rect viewportRect = new Rect(0, 0, 0, 0);
+            while (running) {
+                while (running && cache.getState() != CacheState.START_UPDATE)
                     try {
                         // Sleep until we have something to do
                         Thread.sleep(Integer.MAX_VALUE);
-                    } catch (InterruptedException ignored) {}
+                    } catch (InterruptedException ignored) {
+                    }
                 if (!running)
                     return;
                 long start = System.currentTimeMillis();
                 boolean cont = false;
                 synchronized (cache) {
-                    if (cache.getState()== CacheState.START_UPDATE){
+                    if (cache.getState() == CacheState.START_UPDATE) {
                         cache.setState(CacheState.IN_UPDATE);
                         cache.bitmapRef = null;
                         cont = true;
                     }
                 }
-                if (cont){
-                    synchronized(viewport){
+                if (cont) {
+                    synchronized (viewport) {
                         viewportRect.set(viewport.window);
                     }
                     synchronized (cache) {
-                        if (cache.getState()== CacheState.IN_UPDATE)
+                        if (cache.getState() == CacheState.IN_UPDATE)
                             //cache.setWindowRect(viewportRect);
                             cache.window.set(calculateCacheWindow(viewportRect));
                         else
                             cont = false;
                     }
-                    if (cont){
-                        try{
+                    if (cont) {
+                        try {
                             Bitmap bitmap = fillCache(cache.window);
-                            if (bitmap!=null){
-                                synchronized (cache){
-                                    if (cache.getState()== CacheState.IN_UPDATE){
+                            if (bitmap != null) {
+                                synchronized (cache) {
+                                    if (cache.getState() == CacheState.IN_UPDATE) {
                                         cache.bitmapRef = bitmap;
                                         cache.setState(CacheState.READY);
                                     } else {
@@ -524,15 +612,15 @@ public abstract class Scene {
                             long done = System.currentTimeMillis();
                             if (Debug.isDebuggerConnected())
                                 Log.d(TAG, String.format("fillCache in %dms", done - start));
-                        } catch (OutOfMemoryError e){
-                                    Log.d(TAG, "CacheThread out of memory");
+                        } catch (OutOfMemoryError e) {
+                            Log.d(TAG, "CacheThread out of memory");
                             /*
                              *  Attempt to recover. Experience shows that if we
                              *  do get an OutOfMemoryError, we're pretty hosed and are going down.
                              */
-                            synchronized (cache){
+                            synchronized (cache) {
                                 fillCacheOutOfMemoryError(e);
-                                if (cache.getState()== CacheState.IN_UPDATE){
+                                if (cache.getState() == CacheState.IN_UPDATE) {
                                     cache.setState(CacheState.START_UPDATE);
                                 }
                             }

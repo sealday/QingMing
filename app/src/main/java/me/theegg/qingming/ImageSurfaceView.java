@@ -7,8 +7,8 @@ import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
-import android.view.GestureDetector.OnGestureListener;
 import android.view.GestureDetector.OnDoubleTapListener;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.SurfaceHolder;
@@ -34,16 +34,17 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     private DrawThread drawThread;
 
     //region getters and setters
-    public void getViewport(Point p){
+    public void getViewport(Point p) {
         scene.getViewport().getOrigin(p);
     }
 
-    public void setViewport(Point viewport){
+    public void setViewport(Point viewport) {
         scene.getViewport().setOrigin(viewport.x, viewport.y);
     }
 
     private int initX;
     private int initY;
+
     public void setViewportCenter() {
         Point viewportSize = new Point();
         Point sceneSize = scene.getSceneSize();
@@ -76,7 +77,7 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         if (consumed)
             return true;
 
-        int count =  me.getPointerCount();
+        int count = me.getPointerCount();
         if (count == 2) {
             Log.v("touch", "two finger");
             float x0 = me.getX(0);
@@ -98,14 +99,15 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                     oldY = me.getY(0);
                     return touch.down(x1, y1);
                 case MotionEvent.ACTION_MOVE:
-                    if (scaleGestureDetector.isInProgress() || System.currentTimeMillis()-lastScaleTime<SCALE_MOVE_GUARD)
+                    if (scaleGestureDetector.isInProgress() || System.currentTimeMillis() - lastScaleTime < SCALE_MOVE_GUARD)
                         break;
                     return touch.move(me);
                 case MotionEvent.ACTION_POINTER_UP:
                     oldX = -1;
                     oldY = -1;
                     return touch.up(x1, y1);
-                case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
+                case MotionEvent.ACTION_CANCEL:
+                    return touch.cancel(me);
             }
         } else {
             scaleGestureDetector.onTouchEvent(me);
@@ -113,12 +115,13 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 case MotionEvent.ACTION_DOWN:
                     return touch.down(me);
                 case MotionEvent.ACTION_MOVE:
-                    if (scaleGestureDetector.isInProgress() || System.currentTimeMillis()-lastScaleTime<SCALE_MOVE_GUARD || pressMoveGuard)
+                    if (scaleGestureDetector.isInProgress() || System.currentTimeMillis() - lastScaleTime < SCALE_MOVE_GUARD || pressMoveGuard)
                         break;
                     return touch.move(me);
                 case MotionEvent.ACTION_UP:
                     return touch.up(me);
-                case MotionEvent.ACTION_CANCEL: return touch.cancel(me);
+                case MotionEvent.ACTION_CANCEL:
+                    return touch.cancel(me);
             }
         }
         return super.onTouchEvent(me);
@@ -144,8 +147,8 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         init(context);
     }
 
-    private void init(Context context){
-        gestureDectector = new GestureDetector(context,this);
+    private void init(Context context) {
+        gestureDectector = new GestureDetector(context, this);
         getHolder().addCallback(this);
         scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
     }
@@ -188,12 +191,13 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         private PointF screenFocus = new PointF();
+
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             float scaleFactor = detector.getScaleFactor();
-            if (scaleFactor!=0f && scaleFactor!=1.0f){
-                scaleFactor = 1/scaleFactor;
-                screenFocus.set(detector.getFocusX(),detector.getFocusY());
+            if (scaleFactor != 0f && scaleFactor != 1.0f) {
+                scaleFactor = 1 / scaleFactor;
+                screenFocus.set(detector.getFocusX(), detector.getFocusY());
                 scene.getViewport().zoom(
                         scaleFactor,
                         screenFocus);
@@ -244,8 +248,9 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
     //region implements OnGestureListener
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-        return touch.fling( e1, e2, velocityX, velocityY);
+        return touch.fling(e1, e2, velocityX, velocityY);
     }
+
     //region the rest are defaults
     @Override
     public boolean onDown(MotionEvent e) {
@@ -291,9 +296,12 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         private SurfaceHolder surfaceHolder;
 
         private boolean running = false;
-        public void setRunning(boolean value){ running = value; }
 
-        public DrawThread(SurfaceHolder surfaceHolder){
+        public void setRunning(boolean value) {
+            running = value;
+        }
+
+        public DrawThread(SurfaceHolder surfaceHolder) {
             this.surfaceHolder = surfaceHolder;
         }
 
@@ -304,11 +312,12 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
                 try {
                     // Don't hog the entire CPU
                     Thread.sleep(5);
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                }
                 c = null;
                 try {
                     c = surfaceHolder.lockCanvas();
-                    if (c!=null){
+                    if (c != null) {
                         synchronized (surfaceHolder) {
                             scene.draw(c);// draw it
                         }
@@ -325,29 +334,36 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
     //region class Touch
 
-    enum TouchState {UNTOUCHED,IN_TOUCH,START_FLING,IN_FLING};
+    enum TouchState {UNTOUCHED, IN_TOUCH, START_FLING, IN_FLING}
+
+    ;
+
     class Touch {
         TouchState state = TouchState.UNTOUCHED;
-        /** Where on the view did we initially touch */
-        final Point viewDown = new Point(0,0);
-        /** What was the coordinates of the viewport origin? */
-        final Point viewportOriginAtDown = new Point(0,0);
+        /**
+         * Where on the view did we initially touch
+         */
+        final Point viewDown = new Point(0, 0);
+        /**
+         * What was the coordinates of the viewport origin?
+         */
+        final Point viewportOriginAtDown = new Point(0, 0);
 
         final Scroller scroller;
 
         TouchThread touchThread;
 
-        Touch(Context context){
+        Touch(Context context) {
             scroller = new Scroller(context);
         }
 
-        void start(){
+        void start() {
             touchThread = new TouchThread(this);
             touchThread.setName("touchThread");
             touchThread.start();
         }
 
-        void stop(){
+        void stop() {
             touchThread.running = false;
             touchThread.interrupt();
 
@@ -366,69 +382,72 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         Point fling_viewOrigin = new Point();
         Point fling_viewSize = new Point();
         Point fling_sceneSize = new Point();
-        boolean fling( MotionEvent e1, MotionEvent e2, float velocityX, float velocityY){
+
+        boolean fling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             scene.getViewport().getOrigin(fling_viewOrigin);
             scene.getViewport().getSize(fling_viewSize);
             scene.getSceneSize(fling_sceneSize);
 
-            synchronized(this){
+            synchronized (this) {
                 state = TouchState.START_FLING;
                 scene.setSuspend(true);
                 scroller.fling(
                         fling_viewOrigin.x,
                         fling_viewOrigin.y,
-                        (int)-velocityX,
-                        (int)-velocityY,
+                        (int) -velocityX,
+                        (int) -velocityY,
                         0,
-                        fling_sceneSize.x-fling_viewSize.x,
+                        fling_sceneSize.x - fling_viewSize.x,
                         0,
-                        fling_sceneSize.y-fling_viewSize.y);
+                        fling_sceneSize.y - fling_viewSize.y);
                 touchThread.interrupt();
             }
             return true;
         }
-        boolean down(MotionEvent event){
+
+        boolean down(MotionEvent event) {
             scene.setSuspend(false);    // If we were suspended because of a fling
-            synchronized(this){
+            synchronized (this) {
                 state = TouchState.IN_TOUCH;
                 viewDown.x = (int) event.getX();
                 viewDown.y = (int) event.getY();
                 Point p = new Point();
                 scene.getViewport().getOrigin(p);
-                viewportOriginAtDown.set(p.x,p.y);
+                viewportOriginAtDown.set(p.x, p.y);
             }
             Log.v("touch", "down");
             return true;
         }
 
-        boolean down(float x, float y){
+        boolean down(float x, float y) {
             scene.setSuspend(false);    // If we were suspended because of a fling
-            synchronized(this){
+            synchronized (this) {
                 state = TouchState.IN_TOUCH;
                 viewDown.x = (int) x;
                 viewDown.y = (int) y;
                 Point p = new Point();
                 scene.getViewport().getOrigin(p);
-                viewportOriginAtDown.set(p.x,p.y);
+                viewportOriginAtDown.set(p.x, p.y);
             }
             return true;
         }
-        boolean move(MotionEvent event){
-            if (state== TouchState.IN_TOUCH){
+
+        boolean move(MotionEvent event) {
+            if (state == TouchState.IN_TOUCH) {
                 float zoom = scene.getViewport().getZoom();
-                float deltaX = zoom * (event.getX()-viewDown.x);
-                float deltaY = zoom * (event.getY()-viewDown.y);
+                float deltaX = zoom * (event.getX() - viewDown.x);
+                float deltaY = zoom * (event.getY() - viewDown.y);
                 float newX = (viewportOriginAtDown.x - deltaX);
                 float newY = (viewportOriginAtDown.y - deltaY);
 
-                scene.getViewport().setOrigin((int)newX, (int)newY);
+                scene.getViewport().setOrigin((int) newX, (int) newY);
                 invalidate();
             }
             return true;
         }
 
         boolean move(float x0, float y0, float x, float y) {
-            if (state== TouchState.IN_TOUCH){
+            if (state == TouchState.IN_TOUCH) {
                 float zoom = scene.getViewport().getZoom();
                 float deltaX = zoom * (x - viewDown.x);
                 float deltaY = zoom * (y - viewDown.y);
@@ -437,11 +456,11 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
 
                 Point p = new Point();
                 scene.getSceneSize(p);
-                double deg =  Math.atan2(Math.abs(y-y0),Math.abs(x-x0));
+                double deg = Math.atan2(Math.abs(y - y0), Math.abs(x - x0));
                 if (deg < PI_6) {
-                    scene.getViewport().setOrigin(viewportOriginAtDown.x, (int)newY);
+                    scene.getViewport().setOrigin(viewportOriginAtDown.x, (int) newY);
                 } else if (deg > PI_3) {
-                    scene.getViewport().setOrigin((int)newX, viewportOriginAtDown.y);
+                    scene.getViewport().setOrigin((int) newX, viewportOriginAtDown.y);
                 }
 
                 Log.v("touch", String.format("x0 -> %d , y0 -> %d, x -> %.2f, y -> %.2f", viewportOriginAtDown.x, viewportOriginAtDown.y, newX, newY));
@@ -452,23 +471,23 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
             return true;
         }
 
-        boolean up(MotionEvent event){
-            if (state== TouchState.IN_TOUCH){
+        boolean up(MotionEvent event) {
+            if (state == TouchState.IN_TOUCH) {
                 state = TouchState.UNTOUCHED;
             }
             return true;
         }
 
-        boolean up(float x, float y){
-            if (state== TouchState.IN_TOUCH){
+        boolean up(float x, float y) {
+            if (state == TouchState.IN_TOUCH) {
                 state = TouchState.UNTOUCHED;
             }
             return true;
         }
 
-        boolean cancel(MotionEvent event){
+        boolean cancel(MotionEvent event) {
             Log.v("touch", "cancel");
-            if (state== TouchState.IN_TOUCH){
+            if (state == TouchState.IN_TOUCH) {
                 state = TouchState.UNTOUCHED;
             }
 
@@ -478,35 +497,43 @@ public class ImageSurfaceView extends SurfaceView implements SurfaceHolder.Callb
         class TouchThread extends Thread {
             final Touch touch;
             boolean running = false;
-            void setRunning(boolean value){ running = value; }
 
-            TouchThread(Touch touch){ this.touch = touch; }
+            void setRunning(boolean value) {
+                running = value;
+            }
+
+            TouchThread(Touch touch) {
+                this.touch = touch;
+            }
+
             @Override
             public void run() {
-                running=true;
-                while(running){
-                    while(touch.state!= TouchState.START_FLING && touch.state!= TouchState.IN_FLING){
+                running = true;
+                while (running) {
+                    while (touch.state != TouchState.START_FLING && touch.state != TouchState.IN_FLING) {
                         try {
                             Thread.sleep(Integer.MAX_VALUE);
-                        } catch (InterruptedException e) {}
+                        } catch (InterruptedException e) {
+                        }
                         if (!running)
                             return;
                     }
                     synchronized (touch) {
-                        if (touch.state== TouchState.START_FLING){
+                        if (touch.state == TouchState.START_FLING) {
                             touch.state = TouchState.IN_FLING;
                         }
                     }
-                    if (touch.state== TouchState.IN_FLING){
+                    if (touch.state == TouchState.IN_FLING) {
                         scroller.computeScrollOffset();
                         scene.getViewport().setOrigin(scroller.getCurrX(), scroller.getCurrY());
-                        if (scroller.isFinished()){
+                        if (scroller.isFinished()) {
                             scene.setSuspend(false);
                             synchronized (touch) {
                                 touch.state = TouchState.UNTOUCHED;
-                                try{
+                                try {
                                     Thread.sleep(5);
-                                } catch (InterruptedException e) {}
+                                } catch (InterruptedException e) {
+                                }
                             }
                         }
                     }
