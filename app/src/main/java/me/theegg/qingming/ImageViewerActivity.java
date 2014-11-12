@@ -18,14 +18,14 @@ public class ImageViewerActivity extends ActionBarActivity{
 
     private static final String QINGMING = "qing_ming2.jpg";
 
-    private ImageSurfaceView imageSurfaceView;
+    private MainView mainView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        imageSurfaceView = (ImageSurfaceView) findViewById(R.id.worldview);
+        mainView = (MainView) findViewById(R.id.worldview);
 
         // 恢复状态
         if (savedInstanceState != null && savedInstanceState.containsKey(KEY_X) && savedInstanceState.containsKey(KEY_Y)) {
@@ -34,8 +34,7 @@ public class ImageViewerActivity extends ActionBarActivity{
             int y = (Integer) savedInstanceState.get(KEY_Y);
 
             try {
-                imageSurfaceView.setInputStream(getAssets().open(QINGMING));
-                imageSurfaceView.setViewport(new Point(x, y));
+                mainView.setInputStream(getAssets().open(QINGMING));
             } catch (java.io.IOException e) {
                 Log.e(TAG, e.getMessage());
             }
@@ -43,7 +42,7 @@ public class ImageViewerActivity extends ActionBarActivity{
             try {
                 InputStream
                         is = getAssets().open(QINGMING);
-                imageSurfaceView.setInputStream(is);
+                mainView.setInputStream(is);
             } catch (java.io.IOException e) {
                 Log.e(TAG, e.getMessage());
             }
@@ -58,7 +57,6 @@ public class ImageViewerActivity extends ActionBarActivity{
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         Point p = new Point();
-        imageSurfaceView.getViewport(p);
         outState.putInt(KEY_X, p.x);
         outState.putInt(KEY_Y, p.y);
         super.onSaveInstanceState(outState);

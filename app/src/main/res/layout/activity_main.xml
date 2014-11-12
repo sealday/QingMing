@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-    <me.theegg.qingming.ImageSurfaceView android:id="@+id/worldview"
+    <me.theegg.qingming.MainView android:id="@+id/worldview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         />
