@@ -27,6 +27,45 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
         this.inputStream = inputStream;
     }
 
+    private int offset = 20;
+
+    public void goUp() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x, point.y - offset);
+    }
+
+    public void goDown() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x, point.y + offset);
+    }
+
+    public void goLeft() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x - offset, point.y);
+    }
+
+    public void goRight() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x + offset, point.y);
+    }
+
+    public void zoomOut() {
+        Scene.Viewport p = scene.getViewport();
+        p.zoom(1.2f);
+    }
+
+    public void zoomIn() {
+        Scene.Viewport p = scene.getViewport();
+        p.zoom(0.8f);
+    }
 
     public MainView(Context context) {
         this(context, null);
@@ -62,56 +101,24 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
 
     }
 
-    public void goUp() {
-        Scene.Viewport p = scene.getViewport();
-        Point point = new Point();
-        p.getOrigin(point);
-        p.setOrigin(point.x, point.y - 10);
-    }
-
-    public void goDown() {
-        Scene.Viewport p = scene.getViewport();
-        Point point = new Point();
-        p.getOrigin(point);
-        p.setOrigin(point.x, point.y + 10);
-    }
-
-    public void goLeft() {
-        Scene.Viewport p = scene.getViewport();
-        Point point = new Point();
-        p.getOrigin(point);
-        p.setOrigin(point.x - 10, point.y);
-    }
-
-    public void goRight() {
-        Scene.Viewport p = scene.getViewport();
-        Point point = new Point();
-        p.getOrigin(point);
-        p.setOrigin(point.x + 10, point.y);
-    }
-
-    public void zoomOut() {
-        Scene.Viewport p = scene.getViewport();
-        PointF pointf = new PointF();
-        p.zoom(2,pointf);
-    }
-
-    public void zoomIn() {
-        Scene.Viewport p = scene.getViewport();
-        PointF pointf = new PointF();
-        p.zoom(0.5f,pointf);
-    }
 
     private class DrawThread extends Thread {
         private final SurfaceHolder holder;
+        private boolean running;
 
         public DrawThread(SurfaceHolder holder) {
             this.holder = holder;
         }
 
         @Override
+        public synchronized void start() {
+            super.start();
+            running = true;
+        }
+
+        @Override
         public void run() {
-            while(true) {
+            while(running){
                 Canvas canvas;
                 canvas = holder.lockCanvas();
                 try {

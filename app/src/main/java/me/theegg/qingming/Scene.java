@@ -294,6 +294,16 @@ public abstract class Scene {
         }
 
         /**
+         * 以屏幕中心为焦点放缩
+         * @param factor 倍率
+         */
+        public void zoom(float factor) {
+            PointF pointF = new PointF();
+            pointF.set(window.centerX() - window.left, window.centerY() - window.top);
+            zoom(factor, pointF);
+        }
+
+        /**
          * 调整放大倍率
          * @param factor 倍率
          * @param screenFocus 焦点
