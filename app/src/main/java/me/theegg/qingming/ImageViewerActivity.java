@@ -5,6 +5,7 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -60,5 +61,29 @@ public class ImageViewerActivity extends ActionBarActivity{
         outState.putInt(KEY_X, p.x);
         outState.putInt(KEY_Y, p.y);
         super.onSaveInstanceState(outState);
+    }
+
+    public void handleKey(View view) {
+        int ButtonId = view.getId();
+        switch (ButtonId){
+            case R.id.up_button:
+                mainView.goUp();
+                break;
+            case R.id.down_button:
+                mainView.goDown();
+                break;
+            case R.id.left_button:
+                mainView.goLeft();
+                break;
+            case R.id.right_button:
+                mainView.goRight();
+                break;
+            case R.id.zoomin_button:
+                mainView.zoomIn();
+                break;
+            case R.id.zoomout_button:
+                mainView.zoomOut();
+                break;
+        }
     }
 }

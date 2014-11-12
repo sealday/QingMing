@@ -2,9 +2,13 @@ package me.theegg.qingming;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +17,7 @@ import java.io.InputStream;
  * Created by seal on 14-11-10.
  */
 public class MainView extends SurfaceView implements SurfaceHolder.Callback{
+    private static final String TAG = "MainView";
 
     private DrawThread drawThread;
     private InputStreamScene scene;
@@ -33,6 +38,7 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
 
     public MainView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        getHolder().addCallback(this);
     }
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
@@ -40,6 +46,7 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
             scene = new InputStreamScene(inputStream);
             drawThread = new DrawThread(holder);
             drawThread.start();
+            scene.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -55,6 +62,46 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
 
     }
 
+    public void goUp() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x, point.y - 10);
+    }
+
+    public void goDown() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x, point.y + 10);
+    }
+
+    public void goLeft() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x - 10, point.y);
+    }
+
+    public void goRight() {
+        Scene.Viewport p = scene.getViewport();
+        Point point = new Point();
+        p.getOrigin(point);
+        p.setOrigin(point.x + 10, point.y);
+    }
+
+    public void zoomOut() {
+        Scene.Viewport p = scene.getViewport();
+        PointF pointf = new PointF();
+        p.zoom(2,pointf);
+    }
+
+    public void zoomIn() {
+        Scene.Viewport p = scene.getViewport();
+        PointF pointf = new PointF();
+        p.zoom(0.5f,pointf);
+    }
+
     private class DrawThread extends Thread {
         private final SurfaceHolder holder;
 
@@ -68,9 +115,9 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
                 Canvas canvas;
                 canvas = holder.lockCanvas();
                 try {
-                    synchronized (holder) {
-                        if (canvas != null) {
-                            scene.draw(canvas);
+                    if (canvas != null) {
+                        synchronized (holder) {
+                                scene.draw(canvas);
                         }
                     }
                 } finally {
