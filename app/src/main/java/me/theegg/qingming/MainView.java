@@ -98,7 +98,8 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-
+        scene.stop();
+        drawThread.stopRunning();
     }
 
 
@@ -114,6 +115,18 @@ public class MainView extends SurfaceView implements SurfaceHolder.Callback{
         public synchronized void start() {
             super.start();
             running = true;
+        }
+
+        public void stopRunning(){
+            running = false;
+            boolean retry = true;
+            while (retry) {
+                try {
+                    drawThread.join();
+                    retry = false;
+                } catch (InterruptedException e) {
+                }
+            }
         }
 
         @Override
