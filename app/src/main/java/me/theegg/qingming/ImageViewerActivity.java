@@ -2,12 +2,14 @@ package me.theegg.qingming;
 
 import android.app.Activity;
 import android.graphics.Point;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import java.io.InputStream;
 
@@ -84,6 +86,25 @@ public class ImageViewerActivity extends ActionBarActivity{
             case R.id.zoomout_button:
                 mainView.zoomOut();
                 break;
+            case R.id.volume_up_button:
+                volumeUp();
+                break;
+            case R.id.volume_down_button:
+                volumeDown();
+                break;
         }
+    }
+
+    private void volumeUp() {
+        AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+//        audioManager.adjustVolume(AudioManager.ADJUST_RAISE, 0);
+        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+        Toast.makeText(this, "volumeUp", Toast.LENGTH_SHORT).show();
+    }
+
+    private void volumeDown() {
+        AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+//        audioManager.adjustVolume(AudioManager.ADJUST_LOWER, 0);
+        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
     }
 }

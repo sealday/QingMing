@@ -70,6 +70,19 @@
             android:id="@+id/zoomout_button"
             android:text="缩小"
             />
+
+        <Button
+            android:text="增大音量"
+            android:id="@+id/volume_up_button"
+            android:onClick="handleKey"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <Button
+            android:text="减少音量"
+            android:onClick="handleKey"
+            android:id="@+id/volume_down_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
 
